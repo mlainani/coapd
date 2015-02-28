@@ -1,7 +1,12 @@
-.PHONY: coapd
+.PHONY: coapd clean
 
 CFLAGS = -Wall -Werror
 
+all: coapd
+
 coapd:
 	rm -f coapd
-	gcc ${CFLAGS} coapd.c -o coapd
+	$(CC) $(CFLAGS) coapd.c -o coapd
+
+clean:
+	rm -f coapd
