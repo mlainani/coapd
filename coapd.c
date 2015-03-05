@@ -1,16 +1,3 @@
-#include <signal.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <arpa/inet.h>
-#include <netinet/in.h>
-
-#include <sys/socket.h>
-#include <sys/time.h>
-
 #include "coap.h"
 
 #define MAX_LEN	500
@@ -65,7 +52,7 @@ int main(int argc, char **argv)
 	  perror("inet_pton");
 	  exit(-1);
      }
-     servaddr.sin6_port = htons(COAP_PORT);
+     servaddr.sin6_port = htons(COAP_DEFAULT_PORT);
 
      sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
      if (sockfd < 0) {
