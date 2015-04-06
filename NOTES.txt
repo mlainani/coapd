@@ -1,0 +1,9 @@
+ENG INTL
+quote key + space bar
+
+Emacs beginning of file
+ESC + <
+
+start with server implementation
+use libcoap client for testing
+write the message parsing function first

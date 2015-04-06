@@ -12,6 +12,10 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
+#define handle_error(msg)	\
+     do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+/* RFC 7252 - Section 4.6 */
 #define COAP_MSG_MAX_SIZE	1152
 #define COAP_MSG_MAX_PAYLOAD	1024
 
@@ -133,11 +137,25 @@ typedef struct {
      bool repeat;
      uint16_t minlen;
      uint16_t maxlen;
-     char name[];
-} coap_opt_t;
+     char *name;
+} option;
 
-coap_opt_t options[] = {
+option options[] = {
      { COAP_OPT_IF_MATCH, true, 0, 8, "If-Match" },
-     { COAP_OPT_URI_HOST, false, 1, 255, "Uri-Host" }
+     { COAP_OPT_URI_HOST, false, 1, 255, "Uri-Host" },
+     { COAP_OPT_ETAG, true, 1, 8, "ETag" },
+     { COAP_OPT_IF_NONE_MATCH, false, 0, 0, "If-None-Match" },
+     { COAP_OPT_URI_PORT, false, 0, 2, "Uri-Port" },
+     { COAP_OPT_LOCATION_PATH, true, 0, 255, "Location-Path" },
+     { COAP_OPT_URI_PATH, true, 0, 255, "Uri-Path" },
+     { COAP_OPT_CONTENT_FORMAT, false, 0, 2, "Content-Format" },
+     { COAP_OPT_MAX_AGE, false, 0, 4, "Max-Age" },
+     { COAP_OPT_URI_QUERY, true, 0, 255, "Uri-Query" },
+     { COAP_OPT_ACCEPT, false, 0, 2, "Accept" },
+     { COAP_OPT_LOCATION_QUERY, true, 0, 255, "Location-Query" },
+     { COAP_OPT_PROXY_URI, false, 1, 1034, "Proxy-Uri" },
+     { COAP_OPT_PROXY_SCHEME, false, 1, 255, "Proxy-Scheme" },
+     { COAP_OPT_SIZE1, false, 0, 4, "Size1" }
 };
 
+#define NOPTS ( sizeof(options) / sizeof(options[0]) )
