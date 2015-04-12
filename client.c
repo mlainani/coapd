@@ -18,7 +18,7 @@ int coap_header(uint8_t *hdr, uint8_t type, uint8_t tklen,
      }
 
      *hdr = 0;
-     *hdr |= COAP_VERSION << 6;
+     *hdr |= COAP_VERSION_BITMASK;
      *hdr |= type << 4;
      *hdr |= tklen;
      *(hdr + 1) = code;
@@ -133,7 +133,7 @@ int main(int argc, char **argv)
      srand(time(NULL));
 
      id = rand() % 0xffff;
-     coap_header(hdr, COAP_MSG_TYPE_ACK, 0x8, COAP_CODE_GET, id);
+     coap_header(hdr, COAP_MSG_TYPE_ACK, 0x8, COAP_REQ_GET, id);
 
      signal(SIGALRM, alarm_handler);
 

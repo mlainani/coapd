@@ -19,7 +19,7 @@
 #define COAP_MSG_MAX_SIZE	1152
 #define COAP_MSG_MAX_PAYLOAD	1024
 
-/* #define COAP_HDR_VER(a)		((a >> 6) & 0x3) */
+#define COAP_HDR_VER(a)		((a >> 6) & 0x3)
 #define COAP_HDR_TYPE(a)	((a >> 4) & 0x3)
 #define COAP_HDR_TKLEN(a)	(a & 0xff)
 
@@ -29,7 +29,9 @@
 #define COAP_OPT_DELTA(a)	((a >> 4) & 0xf)
 #define COAP_OPT_LEN(a)		(a & 0xf)
 
-#define COAP_VERSION		0x1
+#define COAP_VERSION		0x01
+
+#define COAP_VERSION_BITMASK	0x40
 
 #define COAP_HDR_SIZE		4
 
@@ -40,14 +42,6 @@
 
 #define COAP_MSG_PAYLOAD_MKR	0xFF
 
-struct coap_msg {
-     unsigned int version:2;
-     unsigned int type:2;
-     unsigned int tklen:4;
-     unsigned int code:8;
-     unsigned int id:16;
-     unsigned char body[0];
-};
 
 /* Transmission parameters */
 
@@ -68,42 +62,79 @@ struct coap_msg {
 #define COAP_EXCHANGE_LIFETIME	247	/* seconds */
 #define COAP_NON_LIFETIME	145	/* seconds */
 
-/* CoAP Method Codes */
+
+/* CoAP codes */
 
 enum {
-     COAP_CODE_GET = 0x01,	/* 0.01 */
-     COAP_CODE_POST,	/* 0.02 */
-     COAP_CODE_PUT,	/* 0.03 */
-     COAP_CODE_DEL		/* 0.04 */
-};
+     COAP_EMPTY_MSG = 0x0,				/* 0.00 */
+     
+     COAP_REQ_GET = 0x01,				/* 0.01 */
+     COAP_REQ_POST,					/* 0.02 */
+     COAP_REQ_PUT,					/* 0.03 */
+     COAP_REQ_DEL,					/* 0.04 */
 
-/* CoAP Response Codes */
-
-enum {
-     COAP_RESP_CREATED = 0x41,			/* 2.01 */
-     COAP_RESP_DELETED,				/* 2.02 */
-     COAP_RESP_VALID,				/* 2.03 */
-     COAP_RESP_CHANGED,				/* 2.04 */
-     COAP_RESP_CONTENT,				/* 2.05 */
+     COAP_RESP_CREATED = 0x41,				/* 2.01 */
+     COAP_RESP_DELETED,					/* 2.02 */
+     COAP_RESP_VALID,					/* 2.03 */
+     COAP_RESP_CHANGED,					/* 2.04 */
+     COAP_RESP_CONTENT,					/* 2.05 */
 
      COAP_RESP_BAD_REQUEST = 0x80,			/* 4.00 */
-     COAP_RESP_UNAUTHORIZED,			/* 4.01 */
+     COAP_RESP_UNAUTHORIZED,				/* 4.01 */
      COAP_RESP_BAD_OPTION,				/* 4.02 */
      COAP_RESP_FORBIDDEN,				/* 4.03 */
      COAP_RESP_NOT_FOUND,				/* 4.04 */
      COAP_RESP_METHOD_NOT_ALLOWED,			/* 4.05 */
-     COAP_RESP_NOT_ACCEPTABLE,			/* 4.06 */
+     COAP_RESP_NOT_ACCEPTABLE,				/* 4.06 */
      COAP_RESP_PRECONDITION_FAILED = 0x8c,		/* 4.12 */
      COAP_RESP_REQUEST_ENTITY_TOO_LARGE,		/* 4.13 */
      COAP_RESP_UNSUPPORTED_CONTENT_FORMAT = 0x8f,	/* 4.15 */
 
-     COAP_RESP_INTERNAL_SERVER_ERROR = 0xa0,	/* 5.00 */
-     COAP_RESP_NOT_IMPLEMENTED,			/* 5.01 */
-     COAP_RESP_BAD_GATEWAY,			/* 5.02 */
-     COAP_RESP_SERVICE_UNAVAILABLE,		/* 5.03 */
-     COAP_RESP_GATEWAY_TIMEOUT,			/* 5.04 */
-     COAP_RESP_PROXYING_NOT_SUPPORTED		/* 5.05 */
+     COAP_RESP_INTERNAL_SERVER_ERROR = 0xa0,		/* 5.00 */
+     COAP_RESP_NOT_IMPLEMENTED,				/* 5.01 */
+     COAP_RESP_BAD_GATEWAY,				/* 5.02 */
+     COAP_RESP_SERVICE_UNAVAILABLE,			/* 5.03 */
+     COAP_RESP_GATEWAY_TIMEOUT,				/* 5.04 */
+     COAP_RESP_PROXYING_NOT_SUPPORTED			/* 5.05 */
 };
+
+struct ci {
+     uint8_t code;
+     char *name;
+} codes[] = {
+     { COAP_EMPTY_MSG, "Empty" },
+
+     { COAP_REQ_GET, "GET" },
+     { COAP_REQ_POST, "POST" },
+     { COAP_REQ_PUT, "PUT" },
+     { COAP_REQ_DEL, "DELETE" },
+
+     { COAP_RESP_CREATED, "Created" },
+     { COAP_RESP_DELETED, "Deleted" },
+     { COAP_RESP_VALID, "Valid" },
+     { COAP_RESP_CHANGED, "Changed" },
+     { COAP_RESP_CONTENT, "Content" },
+
+     { COAP_RESP_BAD_REQUEST, "Bad Request" },
+     { COAP_RESP_UNAUTHORIZED, "Unauthorized" },
+     { COAP_RESP_BAD_OPTION, "Bad Option" },
+     { COAP_RESP_FORBIDDEN, "Forbidden" },
+     { COAP_RESP_NOT_FOUND, "Not Found" },
+     { COAP_RESP_METHOD_NOT_ALLOWED, "Method Not Allowed" },
+     { COAP_RESP_NOT_ACCEPTABLE, "Not Acceptable" },
+     { COAP_RESP_PRECONDITION_FAILED, "Precondition Failed" },
+     { COAP_RESP_REQUEST_ENTITY_TOO_LARGE, "Request Entity Too Large" },
+     { COAP_RESP_UNSUPPORTED_CONTENT_FORMAT, "Unsupported Content-Format" },
+
+     { COAP_RESP_INTERNAL_SERVER_ERROR, "Internal Server Error" },
+     { COAP_RESP_NOT_IMPLEMENTED, "Not Implemented" },
+     { COAP_RESP_BAD_GATEWAY, "Bad Gateway" },
+     { COAP_RESP_SERVICE_UNAVAILABLE, "Service Unavailable" },
+     { COAP_RESP_GATEWAY_TIMEOUT, "Gateway Timeout" },
+     { COAP_RESP_PROXYING_NOT_SUPPORTED, "Proxying Not Supported" }
+};
+
+#define nr_of_codes (sizeof(codes) / sizeof(codes[0]))
 
 /* CoAP Option Numbers */
 
@@ -159,3 +190,18 @@ option options[] = {
 };
 
 #define NOPTS ( sizeof(options) / sizeof(options[0]) )
+
+static inline uint8_t coap_hdr_ver(uint8_t c)
+{
+     return(c >> 6);
+}
+
+static inline uint8_t coap_hdr_type(uint8_t c)
+{
+     return((c >> 4) & 0x3);
+}
+
+static inline uint8_t coap_hdr_tklen(uint8_t c)
+{
+     return(c & 0xf);
+}
