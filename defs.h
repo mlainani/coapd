@@ -12,8 +12,13 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
+#if 1
+#define handle_error(msg)	\
+     do { perror(msg); } while (0)
+#else
 #define handle_error(msg)	\
      do { perror(msg); exit(EXIT_FAILURE); } while (0)
+#endif
 
 /* RFC 7252 - Section 4.6 */
 #define COAP_MSG_MAX_SIZE	1152
@@ -29,16 +34,24 @@
 #define COAP_OPT_DELTA(a)	((a >> 4) & 0xf)
 #define COAP_OPT_LEN(a)		(a & 0xf)
 
-#define COAP_VERSION		0x01
-
-#define COAP_VERSION_BITMASK	0x40
-
 #define COAP_HDR_SIZE		4
 
-#define COAP_MSG_TYPE_CON	0x0
-#define COAP_MSG_TYPE_NON	0x1
-#define COAP_MSG_TYPE_ACK	0x2
-#define COAP_MSG_TYPE_RST	0x3
+#define COAP_VERSION		0x01
+
+#define COAP_VERSION_MASK	0xc0
+#define COAP_VERSION_BITS	0x40
+
+#define COAP_TYPE_CON		0x0
+#define COAP_TYPE_NON		0x1
+#define COAP_TYPE_ACK		0x2
+#define COAP_TYPE_RST		0x3
+
+#define COAP_TYPE_MASK		0x30
+
+#define COAP_TYPE_CON_BITS	0x0
+#define COAP_TYPE_NON_BITS	0x10
+#define COAP_TYPE_ACK_BITS	0x20
+#define COAP_TYPE_RST_BITS	0x30
 
 #define COAP_MSG_PAYLOAD_MKR	0xFF
 
@@ -66,7 +79,7 @@
 /* CoAP codes */
 
 enum {
-     COAP_EMPTY_MSG = 0x0,				/* 0.00 */
+     COAP_EMPTY = 0x0,					/* 0.00 */
      
      COAP_REQ_GET = 0x01,				/* 0.01 */
      COAP_REQ_POST,					/* 0.02 */
@@ -98,11 +111,12 @@ enum {
      COAP_RESP_PROXYING_NOT_SUPPORTED			/* 5.05 */
 };
 
+/* Sorted array of codes for binary search */
 struct ci {
      uint8_t code;
      char *name;
 } codes[] = {
-     { COAP_EMPTY_MSG, "Empty" },
+     { COAP_EMPTY, "Empty" },
 
      { COAP_REQ_GET, "GET" },
      { COAP_REQ_POST, "POST" },
@@ -205,3 +219,7 @@ static inline uint8_t coap_hdr_tklen(uint8_t c)
 {
      return(c & 0xf);
 }
+
+struct {
+     int sockfd;
+} server;

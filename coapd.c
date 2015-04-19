@@ -16,10 +16,29 @@ int compar(const void *p1, const void *p2)
      return 0;
 }
 
-int coap_init()
+int init(struct in6_addr *addr)
 {
-     /* Options array is already sorted by option number */
-     /* qsort(options, NOPTS, sizeof(option), compnum); */
+     struct sockaddr_in6 sockaddr;
+
+     server.sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
+     if (server.sockfd == -1) {
+	  handle_error("socket");
+	  return -1;
+     }
+
+     bzero(&sockaddr, sizeof(sockaddr));
+     sockaddr.sin6_family = AF_INET6;
+     sockaddr.sin6_port = htons(COAP_DEFAULT_PORT);
+     if (addr)
+	  sockaddr.sin6_addr = *addr;
+     else
+	  sockaddr.sin6_addr = in6addr_any;
+     if (bind(server.sockfd, (struct sockaddr *)&sockaddr,
+	      sizeof(sockaddr)) == -1) {
+	  handle_error("bind");
+	  return -1;
+     }
+    
      return 0;
 }
 
@@ -32,6 +51,29 @@ static int compci(const void *c1, const void *c2)
 	  return -1;
      if (ci1->code > ci2->code)
 	  return 1;
+     return 0;
+}
+
+int send_ack(uint16_t id)
+{
+     return 0;
+}
+
+int send_rst(uint16_t id)
+{
+     uint8_t hdr[COAP_HDR_SIZE] = { 0 };
+     
+     hdr[0] |= COAP_VERSION_BITS;
+     hdr[0] |= COAP_TYPE_RST_BITS;
+     *(uint16_t *)&hdr[2] = htons(id);
+
+     
+     
+     return 0;
+}
+
+int send_empty(int sockfd, uint16_t id)
+{
      return 0;
 }
 
@@ -73,31 +115,24 @@ int parse(uint8_t *hdr)
      printf("v: %d  type: %d  tklen: %d  code: %d  id: %d\n",
 	    version, type, tklen, key.code, id);
 
+     send_rst(id);
+
      return 0;
 }
 
 int main(int argc, char **argv)
 {
-     struct sockaddr_in6 servaddr;
-     int sockfd, n;
+     struct sockaddr_in6 cliaddr;
      socklen_t len;
+     int n;
 
-     sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
-     if (sockfd == -1)
-	  handle_error("socket");
+     if (init(NULL) == -1)
+	  exit(EXIT_FAILURE);
 
-     bzero(&servaddr, sizeof(servaddr));
-     servaddr.sin6_family = AF_INET6;
-     servaddr.sin6_port = htons(COAP_DEFAULT_PORT);
-     servaddr.sin6_addr = in6addr_any;
-     if (bind(sockfd, (struct sockaddr *)&servaddr,
-	      sizeof(servaddr)) == -1)
-	  handle_error("bind");
-
-     len = sizeof(servaddr);
+     len = sizeof(struct sockaddr_in6);
      for (;;) {
-	  n = recvfrom(sockfd, buf, COAP_MSG_MAX_SIZE, 0,
-		       (struct sockaddr *)&servaddr, &len);
+	  n = recvfrom(server.sockfd, buf, COAP_MSG_MAX_SIZE, 0,
+		       (struct sockaddr *)&cliaddr, &len);
 	  if (n < 0) {
 	       perror("recvfrom");
 	  }
@@ -107,6 +142,6 @@ int main(int argc, char **argv)
 	  }
      }
 
-     close(sockfd);
+     close(server.sockfd);
      exit(EXIT_SUCCESS);
 }
