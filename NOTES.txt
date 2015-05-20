@@ -11,3 +11,27 @@ write the message parsing function first
 context notion
 
 confirmable vs. non-confirmable message processing
+
+Network management
+==================
+
+Reading /proc/sys should be the preferred method. The latter contains
+configuration parameters whereas /proc/net contains statistics
+entries.
+
+
+GIT
+===
+
+git-config man page search (1 plain long list)
+
+git config --add user.email m.lainani@gmail.com
+git config --global --list
+
+git config --list
+git config --global core.editor emacs23
+
+Graphviz
+========
+
+dot -Tsvg procfs.gv -o procfs.svg

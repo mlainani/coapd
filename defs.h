@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <sys/queue.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 

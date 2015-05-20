@@ -1,8 +1,8 @@
-.PHONY: client coapd cscope dummy clean
+.PHONY: client coapd cscope list dummy clean
 
 CFLAGS = -Wall -Werror
 
-all: client coapd cscope dummy
+all: client coapd cscope dummy list
 
 client:
 	rm -f client
@@ -25,5 +25,9 @@ dummy:
 # indent:
 # 	indent -kr foobar.c
 
+list:
+	rm -f list
+	$(CC) $(CFLAGS) list.c -o list
+
 clean:
-	rm -f client coapd cscope.* dummy patricia
+	rm -f client coapd cscope.* dummy list patricia
