@@ -35,3 +35,9 @@ Graphviz
 ========
 
 dot -Tsvg procfs.gv -o procfs.svg
+
+SNMP
+====
+
+sudo download-mibs 
+sudo apt-get install snmp-mibs-downloader

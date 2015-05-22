@@ -4,6 +4,13 @@
 
 uint8_t buf[COAP_MSG_MAX_SIZE];
 
+
+/* 
+ * The only problem is that there's no NULL terminator in the Uri-Path
+ * options carried in the message
+ */
+char *uri_path_vec[URI_PATH_VEC_MAX_SIZE];
+
 int compar(const void *p1, const void *p2)
 {
      option *opt1 = (option *)p1;
@@ -77,11 +84,16 @@ int send_empty(int sockfd, uint16_t id)
      return 0;
 }
 
+static inline const char *type2str(uint8_t type)
+{
+     return type_str[type];
+}
+
 int parse(uint8_t *hdr)
 {
      uint8_t version, type, tklen;
      struct ci key, *res;
-     uint16_t id;
+     uint16_t mid;
 
      version = coap_hdr_ver(*hdr);
      if (version != COAP_VERSION) {
@@ -107,15 +119,13 @@ int parse(uint8_t *hdr)
 		 __func__, key.code);
 	  return -1;
      }
-     else
-	  printf("%s: %s msg\n", __func__, res->name);
 
-     id = htons(*(uint16_t *)(hdr + 2));
+     mid = htons(*(uint16_t *)(hdr + 2));
 
-     printf("v: %d  type: %d  tklen: %d  code: %d  id: %d\n",
-	    version, type, tklen, key.code, id);
+     printf("v: %d  type: %s  tklen: %d  code: %s  mid: %d\n",
+	    version, type2str(type), tklen, res->name, mid);
 
-     send_rst(id);
+     send_rst(mid);
 
      return 0;
 }
@@ -137,7 +147,8 @@ int main(int argc, char **argv)
 	       perror("recvfrom");
 	  }
 	  else {
-	       printf("received %d bytes\n", n);
+	       if (n > COAP_MSG_MAX_SIZE)
+		    printf("msg size exceeds %d bytes\n", COAP_MSG_MAX_SIZE);
 	       parse((uint8_t *)buf);
 	  }
      }

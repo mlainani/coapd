@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <signal.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -42,11 +43,6 @@
 #define COAP_VERSION_MASK	0xc0
 #define COAP_VERSION_BITS	0x40
 
-#define COAP_TYPE_CON		0x0
-#define COAP_TYPE_NON		0x1
-#define COAP_TYPE_ACK		0x2
-#define COAP_TYPE_RST		0x3
-
 #define COAP_TYPE_MASK		0x30
 
 #define COAP_TYPE_CON_BITS	0x0
@@ -76,6 +72,17 @@
 #define COAP_EXCHANGE_LIFETIME	247	/* seconds */
 #define COAP_NON_LIFETIME	145	/* seconds */
 
+
+/* CoAP types */
+
+enum {
+     COAP_TYPE_CON = 0x0,
+     COAP_TYPE_NON,
+     COAP_TYPE_ACK,
+     COAP_TYPE_RST
+};
+
+char *type_str[] = {"CON", "NON", "ACK", "RST"};
 
 /* CoAP codes */
 
@@ -205,6 +212,9 @@ option options[] = {
 };
 
 #define NOPTS ( sizeof(options) / sizeof(options[0]) )
+
+/* Max number of Uri-Path options in a message */
+#define URI_PATH_VEC_MAX_SIZE	32
 
 static inline uint8_t coap_hdr_ver(uint8_t c)
 {

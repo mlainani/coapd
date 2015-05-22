@@ -16,7 +16,7 @@ cscope:
 	@ rm -f cscope.*
 	@ echo -q > cscope.files
 	@ find . -type f -name '*.[ch]' >> cscope.files
-	@ cscope -b -I/usr/include
+	@ cscope -b
 
 dummy:
 	rm -f dummy
