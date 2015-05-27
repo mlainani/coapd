@@ -1,3 +1,24 @@
+GRAPH
+=====
+
+Use tsearch instead of tfind in resource add and free the pointer used
+for the search operation as done in the man page example.
+
+COAPD
+=====
+
+Who should I respond to? Store the client IPv6 address aling with the
+message ID
+
+=======
+URI initialization
+e.g. /proc/uptime
+system/uptime man proc(5)
+       /proc/uptime
+              This  file contains two numbers: the uptime of the system (seconds), and
+              the amount of time spent in idle process (seconds).
+=======
+
 ENG INTL
 quote key + space bar
 

@@ -1,9 +1,10 @@
-#include <stdlib.h>
-
 #include "defs.h"
 
-uint8_t buf[COAP_MSG_MAX_SIZE];
+#include "msgtab.h"
 
+static struct server srv;
+
+uint8_t buf[COAP_MSG_MAX_SIZE];
 
 /* 
  * The only problem is that there's no NULL terminator in the Uri-Path
@@ -27,8 +28,8 @@ int init(struct in6_addr *addr)
 {
      struct sockaddr_in6 sockaddr;
 
-     server.sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
-     if (server.sockfd == -1) {
+     srv.sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
+     if (srv.sockfd == -1) {
 	  handle_error("socket");
 	  return -1;
      }
@@ -40,7 +41,7 @@ int init(struct in6_addr *addr)
 	  sockaddr.sin6_addr = *addr;
      else
 	  sockaddr.sin6_addr = in6addr_any;
-     if (bind(server.sockfd, (struct sockaddr *)&sockaddr,
+     if (bind(srv.sockfd, (struct sockaddr *)&sockaddr,
 	      sizeof(sockaddr)) == -1) {
 	  handle_error("bind");
 	  return -1;
@@ -68,15 +69,31 @@ int send_ack(uint16_t id)
 
 int send_rst(uint16_t id)
 {
+     struct msg *msgp;
      uint8_t hdr[COAP_HDR_SIZE] = { 0 };
-     
-     hdr[0] |= COAP_VERSION_BITS;
-     hdr[0] |= COAP_TYPE_RST_BITS;
-     *(uint16_t *)&hdr[2] = htons(id);
+     struct sockaddr_in6 dst;
+     int ret = -1;
 
+     msgp = msgtab_lookup(id, NULL, false);
      
-     
-     return 0;
+     if (msgp != NULL) {
+
+	  bzero(&dst, sizeof(dst));
+	  dst.sin6_family = AF_INET6;
+	  memcpy(&dst.sin6_addr, &msgp->src.sin6_addr, sizeof(struct in6_addr));
+	  dst.sin6_port = htons(COAP_DEFAULT_PORT);
+
+	  hdr[0] |= COAP_VERSION_BITS;
+	  hdr[0] |= COAP_TYPE_RST_BITS;
+	  *(uint16_t *)&hdr[2] = htons(id);
+
+	  ret = sendto(srv.sockfd, hdr, COAP_HDR_SIZE, 0,
+		       (struct sockaddr *)&dst, sizeof(dst));
+	  if (ret < 0)
+	       handle_error("sendto");
+     }
+
+     return ret;
 }
 
 int send_empty(int sockfd, uint16_t id)
@@ -89,7 +106,7 @@ static inline const char *type2str(uint8_t type)
      return type_str[type];
 }
 
-int parse(uint8_t *hdr)
+int parse(uint8_t *hdr, struct sockaddr_in6 *src)
 {
      uint8_t version, type, tklen;
      struct ci key, *res;
@@ -125,7 +142,10 @@ int parse(uint8_t *hdr)
      printf("v: %d  type: %s  tklen: %d  code: %s  mid: %d\n",
 	    version, type2str(type), tklen, res->name, mid);
 
-     send_rst(mid);
+     msgtab_lookup(mid, src, true);
+
+     if (type == COAP_TYPE_NON)
+	  send_rst(mid);
 
      return 0;
 }
@@ -139,20 +159,22 @@ int main(int argc, char **argv)
      if (init(NULL) == -1)
 	  exit(EXIT_FAILURE);
 
+     msgtab_init();
+
      len = sizeof(struct sockaddr_in6);
      for (;;) {
-	  n = recvfrom(server.sockfd, buf, COAP_MSG_MAX_SIZE, 0,
+	  n = recvfrom(srv.sockfd, buf, COAP_MSG_MAX_SIZE, 0,
 		       (struct sockaddr *)&cliaddr, &len);
 	  if (n < 0) {
 	       perror("recvfrom");
 	  }
 	  else {
-	       if (n > COAP_MSG_MAX_SIZE)
-		    printf("msg size exceeds %d bytes\n", COAP_MSG_MAX_SIZE);
-	       parse((uint8_t *)buf);
+	       parse((uint8_t *)buf, &cliaddr);
+	       continue;
 	  }
+	  msgtab_walk();
      }
 
-     close(server.sockfd);
+     close(srv.sockfd);
      exit(EXIT_SUCCESS);
 }

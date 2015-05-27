@@ -1,6 +1,5 @@
 #define _GNU_SOURCE
 #include <signal.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -10,7 +9,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include <sys/queue.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 
@@ -231,6 +229,6 @@ static inline uint8_t coap_hdr_tklen(uint8_t c)
      return(c & 0xf);
 }
 
-struct {
+struct server {
      int sockfd;
-} server;
+};

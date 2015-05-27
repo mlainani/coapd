@@ -1,16 +1,16 @@
-.PHONY: client coapd cscope list dummy clean
+.PHONY: client coapd cscope list resources dummy clean
 
-CFLAGS = -Wall -Werror
+CFLAGS = -g -Wall -Werror
 
-all: client coapd cscope dummy list
+all: client coapd cscope dummy list resources
 
 client:
 	rm -f client
 	$(CC) $(CFLAGS) client.c -o client
 
-coapd:
+coapd: coapd.c msgtab.c eprintf.c
 	rm -f coapd
-	$(CC) $(CFLAGS) coapd.c -o coapd
+	$(CC) $(CFLAGS) coapd.c msgtab.c eprintf.c -o coapd
 
 cscope: 
 	@ rm -f cscope.*
@@ -29,5 +29,9 @@ list:
 	rm -f list
 	$(CC) $(CFLAGS) list.c -o list
 
+resources: resources.c eprintf.c
+	rm -f resources
+	$(CC) $(CFLAGS) resources.c eprintf.c -o resources
+
 clean:
-	rm -f client coapd cscope.* dummy list patricia
+	rm -f client coapd cscope.* dummy list resources patricia *~ *.o

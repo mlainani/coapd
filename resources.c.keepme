@@ -1,0 +1,148 @@
+#include <search.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <sys/queue.h>
+
+#include "linux/limits.h"
+
+#include "eprintf.h"
+
+static void *root = NULL;
+
+int dummy_get() {
+     printf("Voila!\n");
+     return 0;
+}
+
+struct resource {
+     char *path;
+     int (*get)();
+} resources[] = {
+     { "path/to/dummy", dummy_get },
+     { "path/to/dummy", dummy_get },
+     { "path/to/dummy", dummy_get },
+     { "path/to/dummy", dummy_get },
+};
+
+#define NRESOURCES ( sizeof(resources) / sizeof(resources[0]) )
+
+char *dummy_tokens[] = { "path", "to", "dummy" };
+
+struct pathvec {
+     int len;
+     int (*get)();
+     char *tokens[];
+} dummy_pathvec = {
+     3, dummy_get, { "path", "to", "dummy"}
+};
+
+/* Linked list item - resource graph vertex adjacency list element */
+struct item {
+     char *name;
+     LIST_ENTRY(item) entries;
+};
+
+/* Binary tree node - resource graph vertex */
+struct node {
+     char *name;
+     LIST_HEAD(listhead, item) head;
+};
+
+static int compar(const void *p1, const void *p2)
+{
+     struct node *n1 = (struct node *)p1;
+     struct node *n2 = (struct node *)p2;
+
+     return strcmp(n1->name, n2->name);
+}
+
+void resource_add(struct resource *resource)
+{
+     bool first, found;
+     struct node *curr, *prev;
+     char *str, *token;
+     void *val;
+     struct item *item;
+
+     for (first = true, prev = NULL, str = &resource->path[0]; ; str = NULL) {
+
+	  token = strtok(str, "/");
+
+	  /* We've reached the end of the string */
+	  if (token == NULL) {
+	       /* Resource ? */
+	       break;
+	  }
+
+	  /* Allocate and initialize the b-tree node element*/
+	  /* Needed even if we just want to search for a node */
+	  curr = (struct node *)emalloc(sizeof(struct node));
+
+	  LIST_INIT(&curr->head);
+
+	  curr->name = estrdup(token);
+
+/* 
+ * Add the node to the b-tree if it doesn't exist yet. If it exists
+ * already, free the node allocated for the search operation and store
+ * its address for upcoming processing.
+ */
+	  val = tsearch((void *)curr, &root, compar);
+	  if (val == NULL)
+	       exit(EXIT_FAILURE);
+	  else if (*(struct node **)val != curr) {
+	       free(curr);
+	       curr = *(struct node **)val;
+	  }
+	  
+	  /* Add the current path token to it's parent adjacency list */
+	  if (first == false) {
+
+	       found = false;
+
+	       for (item = prev->head.lh_first; item != NULL;
+		    item = item->entries.le_next) {
+		    if (strcmp(curr->name, item->name) == 0)
+			 found = true;
+	       }
+
+	       if (found == false) {
+		    item = (struct item *)emalloc(sizeof(struct item));
+		    item->name = estrdup(curr->name);
+		    LIST_INSERT_HEAD(&prev->head, item, entries);
+	       }
+	  }
+
+	  first = false;
+	  prev = curr;
+     }
+}
+
+void resources_init()
+{
+     int i;
+
+     for (i = 0; i < NRESOURCES; i++) {
+	  resource_add(&resources[i]);
+     }
+}
+
+struct resource *resource_lookup(struct pathvec *pathvec)
+{
+     return NULL;
+}
+
+int main()
+{
+     struct resource *resource;
+
+     resources_init();
+     resource = resource_lookup(&dummy_pathvec);
+     if (resource != NULL)
+     resource->get();
+
+     exit(EXIT_SUCCESS);
+}
