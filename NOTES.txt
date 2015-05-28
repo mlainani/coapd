@@ -4,6 +4,12 @@ GRAPH
 Use tsearch instead of tfind in resource add and free the pointer used
 for the search operation as done in the man page example.
 
+RESTRICTION: resource graph leafs must have distinct names. For
+instance you cannot have
+
+/path/to/some/resource
+/path/to/other/resource
+
 COAPD
 =====
 
@@ -62,3 +68,12 @@ SNMP
 
 sudo download-mibs 
 sudo apt-get install snmp-mibs-downloader
+
+BOOKS
+=====
+
+Linux Programming by Example
+http://www.informit.com/content/images/0131429647/sourcecode/robbinsLinuxProgramming.tgz
+
+The Practice of Programming
+http://www.cs.princeton.edu/~bwk/tpop.webpage/code.html

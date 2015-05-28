@@ -53,6 +53,16 @@ int other_get() {
      return 0;
 }
 
+int short_get() {
+     printf("Voila short!\n");
+     return 0;
+}
+
+int long_get() {
+     printf("Voila long!\n");
+     return 0;
+}
+
 enum { PATH_MAX_TOKENS = 4 };
 
 struct path {
@@ -61,17 +71,33 @@ struct path {
 } paths[] = {
      { some_get, { "path", "to", "some" } },
      { other_get, { "path", "to", "other" } },
+     { short_get, { "short" } },
+     { long_get, { "path", "to", "very", "long" } },
 };
 
 #define NPATHS ( sizeof(paths) / sizeof(paths[0]) )
 
-/* Linked list item - path graph vertex adjacency list element */
+int dummy_get() {
+     printf("Voila dummy!\n");
+     return 0;
+}
+
+struct path dummies[] = {
+     { some_get, { "path", "to", "dummy" } },
+     { other_get, { "path", "dummy", "other" } },
+     { short_get, { "dummy" } },
+     { long_get, { "path", "to", "very", "dummy" } },
+};
+
+#define NDUMMIES ( sizeof(dummies) / sizeof(dummies[0]) )
+
+/* Linked list item == path graph vertex adjacency list element */
 struct item {
      char *name;
      LIST_ENTRY(item) entries;
 };
 
-/* Binary tree node - path graph vertex */
+/* Binary tree node == path graph vertex */
 struct node {
      char *name;
      int (*get)();
@@ -96,11 +122,11 @@ void path_add(struct path *path)
      bool found;
 
      for (prev = NULL, i = 0, str = path->tokens[i];
-	  str != NULL;
+	  i < PATH_MAX_TOKENS && str != NULL;
 	  str = path->tokens[++i]) {
 
 	  /* 
-           * Allocate and initialize the b-tree node element. Needed even if we
+           * Allocate and initialize the B-tree node element. Needed even if we
 	   * just want to search a node.
            */
 
@@ -108,7 +134,7 @@ void path_add(struct path *path)
 	  curr->name = str;
 
 	  /* 
-           * Add the node to the b-tree if it doesn't exist yet. If it exists
+           * Add the node to the B-tree if it doesn't exist yet. If it exists
 	   * already, free the node allocated for the search operation and store
 	   * its address for upcoming processing.
            */
@@ -131,8 +157,10 @@ void path_add(struct path *path)
 	       found = false;
 	       for (item = prev->head.lh_first; item != NULL;
 		    item = item->entries.le_next) {
-		    if (curr->name == item->name)
+		    if (curr->name == item->name) {
 			 found = true;
+			 break;
+		    }
 	       }
 	       if (found == false) {
 		    item = (struct item *)emalloc(sizeof(struct item));
@@ -157,7 +185,7 @@ void paths_init()
      }
 }
 
-/* Return the b-tree node corresponding to the last token of a valid path */
+/* Return the B-tree node corresponding to the last token of a valid path */
 
 struct node *path_lookup(char *tokens[])
 {
@@ -189,8 +217,10 @@ struct node *path_lookup(char *tokens[])
 	  found = false;
 	  for (item = node->head.lh_first; item != NULL;
 	       item = item->entries.le_next) {
-	       if (strcmp(item->name, tokens[i + 1]) == 0 )
+	       if (strcmp(item->name, tokens[i + 1]) == 0 ) {
 		    found = true;
+		    break;
+	       }
 	  }
 	  if (found == false) {
 	       node = NULL;
@@ -201,6 +231,38 @@ struct node *path_lookup(char *tokens[])
      return node;
 }
 
+static void print_name(const void *p, const VISIT which, const int depth)
+{
+     struct node *node;
+     struct item *item;
+
+     switch (which) {
+
+     case preorder:			/* before visiting the  children */
+	  break;
+
+     case postorder:			/* after the 1st and before the 2nd */
+	  node = *(struct node **)p;
+	  for (item = node->head.lh_first; item != NULL;
+	       item = item->entries.le_next) {
+	       printf("    %s -> %s;\n", node->name, item->name);
+	  }
+	  break;
+
+     case endorder:			/* after visiting the children */
+ 	  break;
+
+     case leaf:
+	  node = *(struct node **)p;
+	  /* B-tree leaf doesn't mean graph leaf !!! */
+	  for (item = node->head.lh_first; item != NULL;
+	       item = item->entries.le_next) {
+	       printf("    %s -> %s;\n", node->name, item->name);
+	  }
+	  break;
+     }
+}
+
 int main()
 {
      int i;
@@ -208,8 +270,18 @@ int main()
 
      paths_init();
 
+     printf("digraph G {\n");
+     twalk(root, print_name);
+     printf("}\n");
+
      for (i = 0; i < NPATHS; i++) {
 	  node = path_lookup(paths[i].tokens);
+	  if (node != NULL)
+	       node->get();
+     }
+
+     for (i = 0; i < NDUMMIES; i++) {
+	  node = path_lookup(dummies[i].tokens);
 	  if (node != NULL)
 	       node->get();
      }
