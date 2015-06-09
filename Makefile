@@ -1,8 +1,8 @@
-.PHONY: client coapd cscope list resources dummy clean
+.PHONY: client coapd cscope list resources system dummy clean
 
 CFLAGS = -g -Wall -Werror
 
-all: client coapd cscope dummy list resources
+all: client coapd cscope dummy list resources system
 
 client:
 	rm -f client
@@ -33,5 +33,9 @@ resources: resources.c eprintf.c
 	rm -f resources
 	$(CC) $(CFLAGS) resources.c eprintf.c -o resources
 
+system: hexdump.c system.c
+	rm -f system
+	$(CC) $(CFLAGS) hexdump.c system.c -o system
+
 clean:
-	rm -f client coapd cscope.* dummy list resources patricia *~ *.o
+	rm -f client coapd cscope.* dummy list resources system *~ *.o

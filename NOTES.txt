@@ -52,8 +52,16 @@ GIT
 
 git-config man page search (1 plain long list)
 
-git config --add user.email m.lainani@gmail.com
+Global
+
+git config --global --unset user.email (if needed)
+git config --local --add user.email m.lainani@gmail.com
+git config --global core.editor emacs23
 git config --global --list
+
+Local
+
+git config --local --add user.email m.lainani@gmail.com
 
 git config --list
 git config --global core.editor emacs23
