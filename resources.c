@@ -104,7 +104,7 @@ struct node {
      LIST_HEAD(listhead, item) head;
 };
 
-static int compar(const void *p1, const void *p2)
+static int tcompar(const void *p1, const void *p2)
 {
      struct node *n1 = (struct node *)p1;
      struct node *n2 = (struct node *)p2;
@@ -139,7 +139,7 @@ void path_add(struct path *path)
 	   * its address for upcoming processing.
            */
 
-	  val = tsearch((void *)curr, &root, compar);
+	  val = tsearch((void *)curr, &root, tcompar);
 
 	  if (val == NULL)
 	       exit(EXIT_FAILURE);
@@ -198,7 +198,7 @@ struct node *path_lookup(char *tokens[])
 
      for (i = 0; i < PATH_MAX_TOKENS && tokens[i] != NULL; i++) {
 	  key.name = tokens[i];
-	  val = tfind((void *)&key, &root, compar);
+	  val = tfind((void *)&key, &root, tcompar);
 
 	  /* Path token can't be found */
 	  if (val == NULL)

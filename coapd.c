@@ -12,19 +12,7 @@ uint8_t buf[COAP_MSG_MAX_SIZE];
  */
 char *uri_path_vec[URI_PATH_VEC_MAX_SIZE];
 
-int compar(const void *p1, const void *p2)
-{
-     option *opt1 = (option *)p1;
-     option *opt2 = (option *)p2;
-
-     if (opt1->num < opt2->num)
-	  return -1;
-     if (opt1->num > opt2->num)
-	  return 1;
-     return 0;
-}
-
-int init(struct in6_addr *addr)
+int sock_init(struct in6_addr *addr)
 {
      struct sockaddr_in6 sockaddr;
 
@@ -50,14 +38,14 @@ int init(struct in6_addr *addr)
      return 0;
 }
 
-static int compci(const void *c1, const void *c2)
+static int bcompar(const void *p1, const void *p2)
 {
-     struct ci *ci1 = (struct ci *)c1;
-     struct ci *ci2 = (struct ci *)c2;
+     struct method *m1 = (struct method *)p1;
+     struct method *m2 = (struct method *)p2;
      
-     if (ci1->code < ci2->code)
+     if (m1->code < m2->code)
 	  return -1;
-     if (ci1->code > ci2->code)
+     if (m1->code > m2->code)
 	  return 1;
      return 0;
 }
@@ -109,8 +97,9 @@ static inline const char *type2str(uint8_t type)
 int parse(uint8_t *hdr, struct sockaddr_in6 *src)
 {
      uint8_t version, type, tklen;
-     struct ci key, *res;
+     struct method method, *res;
      uint16_t mid;
+     int ret;
 
      version = coap_hdr_ver(*hdr);
      if (version != COAP_VERSION) {
@@ -128,12 +117,12 @@ int parse(uint8_t *hdr, struct sockaddr_in6 *src)
 	  return -1;
      }
 
-     key.code = *(hdr + 1);
-     res = bsearch(&key, codes, nr_of_codes,
-		   sizeof(struct ci), compci);
+     method.code = *(hdr + 1);
+     res = bsearch(&method, methods, nr_of_methods,
+		   sizeof(struct method), bcompar);
      if (res == NULL) {
 	  printf("%s: msg ignored (unknown code %d)\n",
-		 __func__, key.code);
+		 __func__, method.code);
 	  return -1;
      }
 
@@ -142,7 +131,15 @@ int parse(uint8_t *hdr, struct sockaddr_in6 *src)
      printf("v: %d  type: %s  tklen: %d  code: %s  mid: %d\n",
 	    version, type2str(type), tklen, res->name, mid);
 
+     /* Add new entry to the hash table */
      msgtab_lookup(mid, src, true);
+
+     if (method.handler != NULL)
+	  ret = method.handler(mid);
+
+     if (ret == 0) {
+	  ;
+     }
 
      if (type == COAP_TYPE_NON)
 	  send_rst(mid);
@@ -156,12 +153,16 @@ int main(int argc, char **argv)
      socklen_t len;
      int n;
 
-     if (init(NULL) == -1)
+     /* Server listening socket */
+     if (sock_init(NULL) == -1)
 	  exit(EXIT_FAILURE);
 
+     /* Initialize client messages hash table  */
      msgtab_init();
 
      len = sizeof(struct sockaddr_in6);
+
+     /* Wait for incoming messages */
      for (;;) {
 	  n = recvfrom(srv.sockfd, buf, COAP_MSG_MAX_SIZE, 0,
 		       (struct sockaddr *)&cliaddr, &len);
@@ -170,7 +171,7 @@ int main(int argc, char **argv)
 	  }
 	  else {
 	       parse((uint8_t *)buf, &cliaddr);
-	       continue;
+	       /* continue; */
 	  }
 	  msgtab_walk();
      }

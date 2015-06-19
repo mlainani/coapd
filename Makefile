@@ -8,9 +8,9 @@ client:
 	rm -f client
 	$(CC) $(CFLAGS) client.c -o client
 
-coapd: coapd.c msgtab.c eprintf.c
+coapd: coapd.c msgtab.c eprintf.c methods.c
 	rm -f coapd
-	$(CC) $(CFLAGS) coapd.c msgtab.c eprintf.c -o coapd
+	$(CC) $(CFLAGS) coapd.c msgtab.c eprintf.c methods.c -o coapd
 
 cscope: 
 	@ rm -f cscope.*

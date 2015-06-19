@@ -12,6 +12,8 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
+#include "methods.h"
+
 #if 1
 #define handle_error(msg)	\
      do { perror(msg); } while (0)
@@ -82,7 +84,7 @@ enum {
 
 char *type_str[] = {"CON", "NON", "ACK", "RST"};
 
-/* CoAP codes */
+/* CoAP method codes */
 
 enum {
      COAP_EMPTY = 0x0,					/* 0.00 */
@@ -118,13 +120,14 @@ enum {
 };
 
 /* Sorted array of codes for binary search */
-struct ci {
+struct method {
      uint8_t code;
      char *name;
-} codes[] = {
+     int (*handler)(uint16_t mid);
+} methods[] = {
      { COAP_EMPTY, "Empty" },
 
-     { COAP_REQ_GET, "GET" },
+     { COAP_REQ_GET, "GET" , handle_get},
      { COAP_REQ_POST, "POST" },
      { COAP_REQ_PUT, "PUT" },
      { COAP_REQ_DEL, "DELETE" },
@@ -154,7 +157,7 @@ struct ci {
      { COAP_RESP_PROXYING_NOT_SUPPORTED, "Proxying Not Supported" }
 };
 
-#define nr_of_codes (sizeof(codes) / sizeof(codes[0]))
+#define nr_of_methods (sizeof(methods) / sizeof(methods[0]))
 
 /* CoAP Option Numbers */
 
@@ -183,15 +186,13 @@ enum {
 
 #define COAP_DEFAULT_PORT		5683
 
-typedef struct {
+struct option {
      uint16_t num;
      bool repeat;
      uint16_t minlen;
      uint16_t maxlen;
      char *name;
-} option;
-
-option options[] = {
+} options[] = {
      { COAP_OPT_IF_MATCH, true, 0, 8, "If-Match" },
      { COAP_OPT_URI_HOST, false, 1, 255, "Uri-Host" },
      { COAP_OPT_ETAG, true, 1, 8, "ETag" },
@@ -209,7 +210,7 @@ option options[] = {
      { COAP_OPT_SIZE1, false, 0, 4, "Size1" }
 };
 
-#define NOPTS ( sizeof(options) / sizeof(options[0]) )
+#define nr_of_options ( sizeof(options) / sizeof(options[0]) )
 
 /* Max number of Uri-Path options in a message */
 #define URI_PATH_VEC_MAX_SIZE	32
