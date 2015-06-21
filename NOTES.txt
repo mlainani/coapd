@@ -1,3 +1,12 @@
+COAP OPTIONS PROCESSING
+=======================
+
+if the UDP payload length is greater than the fixed-size header length
+then parse options
+
+Non-repeatable options: It's not the first option, Option Delta is
+zero and the current option is not repeatable.
+
 GRAPH
 =====
 

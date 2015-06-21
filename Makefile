@@ -6,11 +6,11 @@ all: client coapd cscope dummy list resources system
 
 client:
 	rm -f client
-	$(CC) $(CFLAGS) client.c -o client
+	$(CC) $(CFLAGS) client.c codes.c -o client
 
-coapd: coapd.c msgtab.c eprintf.c methods.c
+coapd: coapd.c msgtab.c eprintf.c methods.c options.c
 	rm -f coapd
-	$(CC) $(CFLAGS) coapd.c msgtab.c eprintf.c methods.c -o coapd
+	$(CC) $(CFLAGS) coapd.c msgtab.c eprintf.c methods.c options.c -o coapd
 
 cscope: 
 	@ rm -f cscope.*
@@ -37,5 +37,14 @@ system: hexdump.c system.c
 	rm -f system
 	$(CC) $(CFLAGS) hexdump.c system.c -o system
 
+test_codes: test_codes.c codes.c
+	rm -f test_codes
+	$(CC) $(CFLAGS) test_codes.c codes.c -o test_codes
+
+test_options: test_options.c options.c
+	rm -f test_options
+	$(CC) $(CFLAGS) test_options.c options.c -o test_options
+
 clean:
-	rm -f client coapd cscope.* dummy list resources system *~ *.o
+	rm -f client coapd cscope.* dummy list resources system test_codes test_options
+	rm -f *~ *.o

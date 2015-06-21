@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "defs.h"
+#include "codes.h"
 
 void *root = NULL;
 
@@ -30,8 +31,8 @@ int coap_header(uint8_t *hdr, uint8_t type, uint8_t tklen,
 
 static int comparname(const void *p1, const void *p2)
 {
-     option *opt1 = (option *)p1;
-     option *opt2 = (option *)p2;
+     struct option *opt1 = (struct option *)p1;
+     struct option *opt2 = (struct option *)p2;
 
      return strcmp(opt1->name, opt2->name);
 }
@@ -41,7 +42,7 @@ static void init()
      int i;
      void *val;
 
-     for (i = 0; i < NOPTS; i++) {
+     for (i = 0; i < nr_of_options; i++) {
 	  val = tsearch((void *)&options[i], &root, comparname);
 	  if (val == NULL)
 	       exit(EXIT_FAILURE);
@@ -58,19 +59,19 @@ static void init()
 
 static void action(const void *nodep, const VISIT which, const int depth)
 {
-     option *opt;
+     struct option *opt;
 
      switch (which) {
      case preorder:			/* before visiting the  children */
 	  break;
      case postorder:			/* after the 1st and before the 2nd */
-	  opt = *(option **)nodep;
+	  opt = *(struct option **)nodep;
 	  printf("%s\n", opt->name);
 	  break;
      case endorder:			/* after visiting the children */
 	  break;
      case leaf:
-	  opt = *(option **)nodep;
+	  opt = *(struct option **)nodep;
 	  printf("%s\n", opt->name);
 	  break;
      }
@@ -78,8 +79,8 @@ static void action(const void *nodep, const VISIT which, const int depth)
 
 static int comparnum(const void *p1, const void *p2)
 {
-     option *opt1 = (option *)p1;
-     option *opt2 = (option *)p2;
+     struct option *opt1 = (struct option *)p1;
+     struct option *opt2 = (struct option *)p2;
 
      if (opt1->num < opt2->num)
 	  return -1;
@@ -159,10 +160,10 @@ int main(int argc, char **argv)
 
      /* Array binary search by option number */
      for (i = 1; i < argc; i++) {
-	  option key, *res;
+	  struct option key, *res;
 	  key.num = atoi(argv[i]);
-	  res = bsearch(&key, options, NOPTS,
-			sizeof(option), comparnum);
+	  res = bsearch(&key, options, nr_of_options,
+			sizeof(struct option), comparnum);
 	  if (res == NULL)
 	       printf("'%s': unknown option\n", argv[i]);
 	  else

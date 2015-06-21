@@ -1,6 +1,8 @@
 #include "defs.h"
 
 #include "msgtab.h"
+#include "codes.h"
+#include "options.h"
 
 static struct server srv;
 
@@ -40,12 +42,12 @@ int sock_init(struct in6_addr *addr)
 
 static int bcompar(const void *p1, const void *p2)
 {
-     struct method *m1 = (struct method *)p1;
-     struct method *m2 = (struct method *)p2;
+     struct code *m1 = (struct code *)p1;
+     struct code *m2 = (struct code *)p2;
      
-     if (m1->code < m2->code)
+     if (m1->val < m2->val)
 	  return -1;
-     if (m1->code > m2->code)
+     if (m1->val > m2->val)
 	  return 1;
      return 0;
 }
@@ -94,18 +96,18 @@ static inline const char *type2str(uint8_t type)
      return type_str[type];
 }
 
-int parse(uint8_t *hdr, struct sockaddr_in6 *src)
+int parse(uint8_t *hdr, size_t len, struct sockaddr_in6 *src)
 {
      uint8_t version, type, tklen;
-     struct method method, *res;
+     struct code key, *code;
      uint16_t mid;
-     int ret;
+     int ret = -1;
 
      version = coap_hdr_ver(*hdr);
      if (version != COAP_VERSION) {
 	  printf("%s: msg ignored (unknown version num %d)\n",
 		 __func__, version);
-	  return -1;
+	  goto out;
      }
 
      type = coap_hdr_type(*hdr);
@@ -114,43 +116,45 @@ int parse(uint8_t *hdr, struct sockaddr_in6 *src)
      if (tklen > 8) {
 	  printf("%s: msg format error (tklen %d)\n",
 		 __func__, tklen);
-	  return -1;
+	  goto out;
      }
 
-     method.code = *(hdr + 1);
-     res = bsearch(&method, methods, nr_of_methods,
-		   sizeof(struct method), bcompar);
-     if (res == NULL) {
+     key.val = *(hdr + 1);
+     code = bsearch(&key, codes, nr_of_codes,
+		   sizeof(struct code), bcompar);
+     if (code == NULL) {
 	  printf("%s: msg ignored (unknown code %d)\n",
-		 __func__, method.code);
-	  return -1;
+		 __func__, code->val);
+	  goto out;
      }
 
      mid = htons(*(uint16_t *)(hdr + 2));
 
      printf("v: %d  type: %s  tklen: %d  code: %s  mid: %d\n",
-	    version, type2str(type), tklen, res->name, mid);
+	    version, type2str(type), tklen, code->name, mid);
 
      /* Add new entry to the hash table */
      msgtab_lookup(mid, src, true);
-
-     if (method.handler != NULL)
-	  ret = method.handler(mid);
-
-     if (ret == 0) {
+     
+     if (len > COAP_HDR_SIZE) {
+	  /* Options are present */
+	  ret = parse_options(hdr + 1, len - 1, code->val);
+     }
+     else {
+	  /* Empty message */
 	  ;
      }
 
-     if (type == COAP_TYPE_NON)
-	  send_rst(mid);
-
-     return 0;
+     if (code->handler != NULL)
+	  ret = code->handler(mid);
+out:
+     return ret;
 }
 
 int main(int argc, char **argv)
 {
      struct sockaddr_in6 cliaddr;
-     socklen_t len;
+     socklen_t addrlen;
      int n;
 
      /* Server listening socket */
@@ -160,17 +164,17 @@ int main(int argc, char **argv)
      /* Initialize client messages hash table  */
      msgtab_init();
 
-     len = sizeof(struct sockaddr_in6);
+     addrlen = sizeof(struct sockaddr_in6);
 
      /* Wait for incoming messages */
      for (;;) {
 	  n = recvfrom(srv.sockfd, buf, COAP_MSG_MAX_SIZE, 0,
-		       (struct sockaddr *)&cliaddr, &len);
+		       (struct sockaddr *)&cliaddr, &addrlen);
 	  if (n < 0) {
 	       perror("recvfrom");
 	  }
 	  else {
-	       parse((uint8_t *)buf, &cliaddr);
+	       parse((uint8_t *)buf, n, &cliaddr);
 	       /* continue; */
 	  }
 	  msgtab_walk();
