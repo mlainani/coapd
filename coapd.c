@@ -52,12 +52,12 @@ static int bcompar(const void *p1, const void *p2)
      return 0;
 }
 
-int send_ack(uint16_t id)
+int send_ack(uint16_t mid)
 {
      return 0;
 }
 
-int send_rst(uint16_t id)
+int send_reset(uint16_t mid)
 {
      struct msg *msgp;
      uint8_t hdr[COAP_HDR_SIZE] = { 0 };
@@ -86,7 +86,7 @@ int send_rst(uint16_t id)
      return ret;
 }
 
-int send_empty(int sockfd, uint16_t id)
+int send_empty(int sockfd, uint16_t mid)
 {
      return 0;
 }
@@ -136,13 +136,17 @@ int parse(uint8_t *hdr, size_t len, struct sockaddr_in6 *src)
      /* Add new entry to the hash table */
      msgtab_lookup(mid, src, true);
      
-     if (len > COAP_HDR_SIZE) {
+     if (len > COAP_HDR_SIZE + tklen) {
 	  /* Options are present */
-	  ret = parse_options(hdr + 1, len - 1, code->val);
+	  ret = parse_options(hdr + COAP_HDR_SIZE + tklen,
+			      len - COAP_HDR_SIZE - tklen,
+			      code->val);
      }
      else {
-	  /* Empty message */
-	  ;
+	  /* "CoAP ping" */
+	  if (type == COAP_TYPE_CON && code == COAP_CODE_EMPTY)
+	       send_reset(mid);
+	  goto out;
      }
 
      if (code->handler != NULL)
