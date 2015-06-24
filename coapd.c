@@ -64,7 +64,7 @@ int send_reset(uint16_t mid)
      struct sockaddr_in6 dst;
      int ret = -1;
 
-     msgp = msgtab_lookup(id, NULL, false);
+     msgp = msgtab_lookup(mid, NULL, false);
      
      if (msgp != NULL) {
 
@@ -75,7 +75,7 @@ int send_reset(uint16_t mid)
 
 	  hdr[0] |= COAP_VERSION_BITS;
 	  hdr[0] |= COAP_TYPE_RST_BITS;
-	  *(uint16_t *)&hdr[2] = htons(id);
+	  *(uint16_t *)&hdr[2] = htons(mid);
 
 	  ret = sendto(srv.sockfd, hdr, COAP_HDR_SIZE, 0,
 		       (struct sockaddr *)&dst, sizeof(dst));
@@ -144,7 +144,7 @@ int parse(uint8_t *hdr, size_t len, struct sockaddr_in6 *src)
      }
      else {
 	  /* "CoAP ping" */
-	  if (type == COAP_TYPE_CON && code == COAP_CODE_EMPTY)
+	  if (type == COAP_TYPE_CON && code == COAP_EMPTY)
 	       send_reset(mid);
 	  goto out;
      }

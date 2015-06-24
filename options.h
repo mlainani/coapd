@@ -38,4 +38,19 @@ extern struct option options[];
 
 #define nr_of_options ( sizeof(options) / sizeof(options[0]) )
 
+enum {
+     ONE_BYTE_DELTA = 0xD,
+     TWO_BYTE_DELTA,
+     PAYLOAD_MKR
+};
+
+enum {
+     ONE_BYTE_OPTLEN = 0xD,
+     TWO_BYTE_OPTLEN,
+     RESV_OPTLEN
+};
+
+#define HI_NIBBLE(b) (((b) >> 4) & 0x0f)
+#define LO_NIBBLE(b) ((b) & 0x0f)
+
 int parse_options(uint8_t *buf, size_t len, uint8_t codeval);
