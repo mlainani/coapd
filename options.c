@@ -21,142 +21,100 @@ struct option options[] = {
      { COAP_OPT_SIZE1, false, 0, 4, "Size1" }
 };
 
-static int option_delta(uint8_t *opt, size_t left, uint16_t *delta)
+static int compar(const void *p1, const void *p2)
 {
-     int ret = -1;
+     struct option *opt1 = (struct option *)p1;
+     struct option *opt2 = (struct option *)p2;
 
-     *delta = *opt >> 0x4;
- 
-     switch(*delta) {
-     case ONE_BYTE_DELTA:
-	  if (left > 1) {
-	       *delta = *(opt + 1) + 13;
-	       ret = 0;
-	  }
-	  break;
-     case TWO_BYTE_DELTA:
-	  if (left > 2) {
-	       *delta = ntohs(*(uint16_t *)(opt + 1)) + 269;
-	       ret = 0;
-	  }
-	  break;
-     case PAYLOAD_MKR:
-	  if ((*opt & 0xf) == 0xf)
-	       ret = 0;
-	  break;
-     default:
-	  ret = 0;
-     };
-
-     return ret;
-}
-
-static inline int option_len(uint8_t *opt, size_t left, uint16_t *optlen)
-{
-     int ret = -1;
-
-     *optlen = *opt >> 0x4;
- 
-     switch(*optlen) {
-     case ONE_BYTE_OPTLEN:
-	  if (left > 1) {
-	       *optlen = *(opt + 1) + 13;
-	       ret = 0;
-	  }
-	  break;
-     case TWO_BYTE_OPTLEN:
-	  if (left > 2) {
-	       *optlen = ntohs(*(uint16_t *)(opt + 1)) + 269;
-	       ret = 0;
-	  }
-	  break;
-     case RESV_OPTLEN:
-	  if ((*opt & 0xf) == 0xf)
-	       ret = 0;
-	  break;
-     default:
-	  ret = 0;
-     };
-
-     return ret;
-}
-
-static int process(uint8_t *opt, size_t left,
-		   uint16_t *delta, uint16_t *optlen,
-		   size_t *skiplen)
-{
-     int ret = -1;
-     return ret;
-}
-
-#if 1
-int parse_options(uint8_t *buf, size_t buflen, uint8_t codeval)
-{
-     uint16_t delta, optlen, num;
-     uint8_t *curr;
-     size_t skiplen, offset = 0;
-
-     curr = buf;
-     while (offset < buflen) {
-	  process(curr, buflen - offset, &delta, &optlen, &skiplen);
-	  /* Move curr and increase offset */
-      }
-}
-#else
-int parse_options(uint8_t *buf, size_t buflen, uint8_t codeval)
-{
-     uint16_t prev, optnum, delta;
-     uint8_t *opt, *optval, *curr;
-     size_t len, offset, optlen;
-
-     prev = 0;
-     opt = buf;
-     offset = len = 0;
-     
-     curr = buf;
-     while (curr < buf + buflen) {
-
-	  delta = *opt >> 0x4;
-	  optlen = *opt & 0xf;
-	  
-	  switch(delta) {
-
-	  case ONE_BYTE_DELTA:
-	       if (buflen - offset > 1)
-		    delta = *(opt + 1) + 13;
-	       else
-		    printf("message format error\n");
-	       break;
-
-	  case TWO_BYTE_DELTA:
-	       if (buflen - offset > 2)
-		    delta = ntohs(*(uint16_t *)(opt + 1)) + 269;
-	       else
-		    printf("message format error\n");
-	       break;
-
-	  case PAYLOAD_MKR_NIBBLE:
-	       if ((*opt & 0xf) == 0xf)
-		    printf("finished parsing options\n");
-	       else
-		    printf("message format error\n");
-
-	  default:
-	       ret = 0;
-	  };
-	       
-
-
-	  optnum = prev + option_delta(opt, buflen - offset, &delta);
-	  optlen = option_len(opt);
-
-	  /* Look for the option number */
-	  /* Update len: several places */
-	  len += 0;
-	  /* Add the number of parsed bytes  */
-	  offset += len;
-     }
-
+     if (opt1->num < opt2->num)
+	  return -1;
+     if (opt1->num > opt2->num)
+	  return 1;
      return 0;
 }
-#endif
+
+int parse_options(uint8_t *buf, size_t buflen, uint8_t codeval)
+{
+     uint8_t *opt/* , *optval */;
+     size_t offset, left;
+     uint16_t delta, optlen;
+     struct option key, *prev = NULL;
+
+     opt = buf;
+     offset = 0;
+     left = buflen;
+
+     while (offset < buflen) {
+	  delta = HI_NIBBLE(*opt);
+	  optlen = LO_NIBBLE(*opt);
+	  
+	  offset++;
+	  left--;
+
+	  switch(delta) {
+	  case ONE_BYTE_DELTA:
+	       if (left < 2)
+		    return -1;
+	       delta = *(opt + 1) + 13;
+	       offset++;
+	       left--;
+	       break;
+	  case TWO_BYTE_DELTA:
+	       if (left < 3)
+		    return -1;
+	       delta = ntohs(*(uint16_t *)(opt + 1)) + 269;
+	       offset += 2;
+	       left -= 2;
+	       break;
+	  case PAYLOAD_MKR:
+	       if (optlen != PAYLOAD_MKR)
+		    return -1;
+	       else {
+		    /* TODO: make sure to point to the beginning of the payload; */
+		    goto payload;
+	       }
+	  };
+
+	  switch(optlen) {
+	  case ONE_BYTE_OPTLEN:
+	       if (left < 2)
+		    return -1;
+	       optlen = *(opt + offset + 1) + 13;
+	       offset++;
+	       left--;
+	       break;
+	  case TWO_BYTE_OPTLEN:
+	       if (left < 3)
+		    return -1;
+	       optlen = ntohs(*(uint16_t *)(opt + offset + 1)) + 269;
+	       offset += 2;
+	       left -= 2;
+	       break;
+	  case RESV_OPTLEN:
+	       return -1;
+	  };
+
+	  if (delta == 0 && prev != NULL && prev->repeat == false) {
+	       printf("repeated %s\n", prev->name);
+	       return -1;
+	  }
+
+	  key.num = (prev == NULL ? 0 : prev->num) + delta;
+	  prev = bsearch(&key, options, nr_of_options,
+			sizeof(struct option), compar);
+	  if (prev == NULL) {
+	       printf("'%d': unknown option\n", key.num);
+	       return -1;
+	  }
+	  else
+	       printf("%s: option #%d\n", prev->name, prev->num);
+
+	  offset += optlen;
+	  opt += offset;
+     }
+
+payload:
+     ;
+     
+     return 0;
+}
