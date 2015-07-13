@@ -1,7 +1,5 @@
 #include <stdint.h>	/* uintN_t */
 
-extern int handle_get(uint16_t mid);
-
 /* CoAP codes */
 enum {
      COAP_EMPTY = 0x0,					/* 0.00 */
@@ -35,43 +33,3 @@ enum {
      COAP_RESP_GATEWAY_TIMEOUT,				/* 5.04 */
      COAP_RESP_PROXYING_NOT_SUPPORTED			/* 5.05 */
 };
-
-/* Sorted array of codes for binary search */
-struct code {
-     uint8_t val;
-     char *name;
-     int (*handler)(uint16_t mid);
-} codes[] = {
-     { COAP_EMPTY, "Empty" },
-
-     { COAP_REQ_GET, "GET" , handle_get },
-     { COAP_REQ_POST, "POST" },
-     { COAP_REQ_PUT, "PUT" },
-     { COAP_REQ_DEL, "DELETE" },
-
-     { COAP_RESP_CREATED, "Created" },
-     { COAP_RESP_DELETED, "Deleted" },
-     { COAP_RESP_VALID, "Valid" },
-     { COAP_RESP_CHANGED, "Changed" },
-     { COAP_RESP_CONTENT, "Content" },
-
-     { COAP_RESP_BAD_REQUEST, "Bad Request" },
-     { COAP_RESP_UNAUTHORIZED, "Unauthorized" },
-     { COAP_RESP_BAD_OPTION, "Bad Option" },
-     { COAP_RESP_FORBIDDEN, "Forbidden" },
-     { COAP_RESP_NOT_FOUND, "Not Found" },
-     { COAP_RESP_METHOD_NOT_ALLOWED, "Method Not Allowed" },
-     { COAP_RESP_NOT_ACCEPTABLE, "Not Acceptable" },
-     { COAP_RESP_PRECONDITION_FAILED, "Precondition Failed" },
-     { COAP_RESP_REQUEST_ENTITY_TOO_LARGE, "Request Entity Too Large" },
-     { COAP_RESP_UNSUPPORTED_CONTENT_FORMAT, "Unsupported Content-Format" },
-
-     { COAP_RESP_INTERNAL_SERVER_ERROR, "Internal Server Error" },
-     { COAP_RESP_NOT_IMPLEMENTED, "Not Implemented" },
-     { COAP_RESP_BAD_GATEWAY, "Bad Gateway" },
-     { COAP_RESP_SERVICE_UNAVAILABLE, "Service Unavailable" },
-     { COAP_RESP_GATEWAY_TIMEOUT, "Gateway Timeout" },
-     { COAP_RESP_PROXYING_NOT_SUPPORTED, "Proxying Not Supported" }
-};
-
-#define nr_of_codes (sizeof(codes) / sizeof(codes[0]))

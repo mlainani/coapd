@@ -2,11 +2,52 @@
 
 #include "msgtab.h"
 #include "codes.h"
-#include "options.h"
+#include "request.h"
 
 static struct server srv;
 
 uint8_t buf[COAP_MSG_MAX_SIZE];
+
+/* Sorted array of messages for binary search */
+static struct message {
+     uint8_t code;
+     char *name;
+     int (*handler)(uint16_t mid, uint8_t *buf, size_t buflen);
+} messages[] = {
+     { COAP_EMPTY, "Empty" },
+
+     { COAP_REQ_GET, "GET" , coap_req_get },
+     { COAP_REQ_POST, "POST" },
+     { COAP_REQ_PUT, "PUT" },
+     { COAP_REQ_DEL, "DELETE" },
+
+     { COAP_RESP_CREATED, "Created" },
+     { COAP_RESP_DELETED, "Deleted" },
+     { COAP_RESP_VALID, "Valid" },
+     { COAP_RESP_CHANGED, "Changed" },
+     { COAP_RESP_CONTENT, "Content" },
+
+     { COAP_RESP_BAD_REQUEST, "Bad Request" },
+     { COAP_RESP_UNAUTHORIZED, "Unauthorized" },
+     { COAP_RESP_BAD_OPTION, "Bad Option" },
+     { COAP_RESP_FORBIDDEN, "Forbidden" },
+     { COAP_RESP_NOT_FOUND, "Not Found" },
+     { COAP_RESP_METHOD_NOT_ALLOWED, "Method Not Allowed" },
+     { COAP_RESP_NOT_ACCEPTABLE, "Not Acceptable" },
+     { COAP_RESP_PRECONDITION_FAILED, "Precondition Failed" },
+     { COAP_RESP_REQUEST_ENTITY_TOO_LARGE, "Request Entity Too Large" },
+     { COAP_RESP_UNSUPPORTED_CONTENT_FORMAT, "Unsupported Content-Format" },
+
+     { COAP_RESP_INTERNAL_SERVER_ERROR, "Internal Server Error" },
+     { COAP_RESP_NOT_IMPLEMENTED, "Not Implemented" },
+     { COAP_RESP_BAD_GATEWAY, "Bad Gateway" },
+     { COAP_RESP_SERVICE_UNAVAILABLE, "Service Unavailable" },
+     { COAP_RESP_GATEWAY_TIMEOUT, "Gateway Timeout" },
+     { COAP_RESP_PROXYING_NOT_SUPPORTED, "Proxying Not Supported" }
+};
+
+#define nr_of_messages (sizeof(messages) / sizeof(messages[0]))
+
 
 /* 
  * The only problem is that there's no NULL terminator in the Uri-Path
@@ -42,12 +83,12 @@ int sock_init(struct in6_addr *addr)
 
 static int bcompar(const void *p1, const void *p2)
 {
-     struct code *m1 = (struct code *)p1;
-     struct code *m2 = (struct code *)p2;
+     struct message *m1 = (struct message *)p1;
+     struct message *m2 = (struct message *)p2;
      
-     if (m1->val < m2->val)
+     if (m1->code < m2->code)
 	  return -1;
-     if (m1->val > m2->val)
+     if (m1->code > m2->code)
 	  return 1;
      return 0;
 }
@@ -99,7 +140,7 @@ static inline const char *type2str(uint8_t type)
 int parse(uint8_t *hdr, size_t len, struct sockaddr_in6 *src)
 {
      uint8_t version, type, tklen;
-     struct code key, *code;
+     struct message key, *msg;
      uint16_t mid;
      int ret = -1;
 
@@ -119,38 +160,42 @@ int parse(uint8_t *hdr, size_t len, struct sockaddr_in6 *src)
 	  goto out;
      }
 
-     key.val = *(hdr + 1);
-     code = bsearch(&key, codes, nr_of_codes,
-		   sizeof(struct code), bcompar);
-     if (code == NULL) {
-	  printf("%s: msg ignored (unknown code %d)\n",
-		 __func__, code->val);
+     key.code = *(hdr + 1);
+     msg = bsearch(&key, messages, nr_of_messages,
+		   sizeof(struct message), bcompar);
+     if (msg == NULL) {
+	  printf("%s: msg ignored (unknown message %d)\n",
+		 __func__, msg->code);
 	  goto out;
      }
 
      mid = htons(*(uint16_t *)(hdr + 2));
 
      printf("v: %d  type: %s  tklen: %d  code: %s  mid: %d\n",
-	    version, type2str(type), tklen, code->name, mid);
+	    version, type2str(type), tklen, msg->name, mid);
 
      /* Add new entry to the hash table */
      msgtab_lookup(mid, src, true);
      
      if (len > COAP_HDR_SIZE + tklen) {
 	  /* Options are present */
+#if 0
 	  ret = parse_options(hdr + COAP_HDR_SIZE + tklen,
 			      len - COAP_HDR_SIZE - tklen,
-			      code->val);
+			      msg->code);
+#endif
+	  if (msg->handler != NULL)
+	       ret = msg->handler(mid,
+				  hdr + COAP_HDR_SIZE + tklen,
+				  len - COAP_HDR_SIZE - tklen);
      }
      else {
 	  /* "CoAP ping" */
-	  if (type == COAP_TYPE_CON && code == COAP_EMPTY)
+	  if (type == COAP_TYPE_CON && msg->code == COAP_EMPTY)
 	       send_reset(mid);
 	  goto out;
      }
 
-     if (code->handler != NULL)
-	  ret = code->handler(mid);
 out:
      return ret;
 }
