@@ -48,5 +48,3 @@ enum {
 
 #define HI_NIBBLE(b) (((b) >> 4) & 0x0f)
 #define LO_NIBBLE(b) ((b) & 0x0f)
-
-extern int parse_options(uint8_t *buf, size_t len, uint8_t codeval);
