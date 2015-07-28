@@ -22,6 +22,9 @@ dummy:
 	rm -f dummy
 	$(CC) $(CFLAGS) dummy.c -o dummy
 
+etags:
+	ls *.[ch] | etags -
+
 # indent:
 # 	indent -kr foobar.c
 
@@ -37,6 +40,10 @@ system: hexdump.c system.c
 	rm -f system
 	$(CC) $(CFLAGS) hexdump.c system.c -o system
 
+server: common.c main.c message.c server.c
+	rm -f server
+	$(CC) $(CFLAGS) common.c main.c message.c server.c -o server
+
 test_codes: test_codes.c codes.c
 	rm -f test_codes
 	$(CC) $(CFLAGS) test_codes.c codes.c -o test_codes
@@ -46,5 +53,6 @@ test_options: test_options.c options.c
 	$(CC) $(CFLAGS) test_options.c options.c -o test_options
 
 clean:
-	rm -f client coapd cscope.* dummy list resources system test_codes test_options
+	rm -f TAGS
+	rm -f client coapd cscope.* dummy list resources server system test_codes test_options
 	rm -f *~ *.o

@@ -1,3 +1,17 @@
+SEPARATE PROCESSING OF REQUESTS AND RESPONSES
+=============================================
+
+parse fixed-size header
+if valid fixed-sized header
+  if request message
+    add message to requests hash table
+   else
+    add message to responses hash table
+
+run a thread to process message
+- 
+to continue processing
+
 COAP OPTIONS PROCESSING
 =======================
 
