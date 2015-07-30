@@ -20,6 +20,9 @@ extern void error (const char *cause, const char *message);
 /* Print a warning message */
 extern void warning (const char *message);
 
+/* Print a log message */
+extern void system_log (const char *fmt, ...);
+
 extern void server_run ();
 
 #endif /* SERVER_H */

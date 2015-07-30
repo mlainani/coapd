@@ -10,6 +10,15 @@
 /* RFC 7252 - Section 4.6 */
 #define COAP_MSG_MAX_SIZE	1152
 
+/* CoAP types */
+
+enum {
+     COAP_TYPE_CON = 0x0,
+     COAP_TYPE_NON,
+     COAP_TYPE_ACK,
+     COAP_TYPE_RST
+};
+
 /* CoAP codes */
 enum
 {

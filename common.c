@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,4 +39,15 @@ warning (const char *message)
 {
   /* Print an error message to stderr.  */
   fprintf (stderr, "%s: warning: %s\n", program_name, message);
+}
+
+void
+system_log (const char *fmt, ...)
+{
+  va_list args;
+
+  fflush(stderr);
+  va_start(args, fmt);
+  vfprintf(stderr, fmt, args);
+  va_end(args);
 }

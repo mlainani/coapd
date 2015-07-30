@@ -1,4 +1,6 @@
+#include <assert.h>
 #include <stdint.h>		/* uintN_t */
+#include <stdio.h>		/* printf() */
 #include <stdlib.h>		/* malloc(), free() */
 #include <string.h>		/* size_t */
 
@@ -75,35 +77,47 @@ static struct coap_code
 
 #define nr_of_codes (sizeof(coap_codes) / sizeof(coap_codes[0]))
 
-static int compare(const void *p1, const void *p2)
+static int
+compare (const void *p1, const void *p2)
 {
-     struct coap_code *code1 = (struct coap_code *)p1;
-     struct coap_code *code2 = (struct coap_code *)p2;
-     
-     if (code1->val < code2->val)
-	  return -1;
-     if (code1->val > code2->val)
-	  return 1;
-     return 0;
+  struct coap_code *code1 = (struct coap_code *) p1;
+  struct coap_code *code2 = (struct coap_code *) p2;
+
+  if (code1->val < code2->val)
+    return -1;
+  if (code1->val > code2->val)
+    return 1;
+  return 0;
 }
 
 #define COAP_HEADER_VERSION		0x01
 
-static inline uint8_t coap_header_ver (uint8_t c)
+static inline uint8_t
+coap_header_ver (uint8_t c)
 {
-     return (c >> 6);
+  return (c >> 6);
 }
 
-static inline uint8_t coap_header_type (uint8_t c)
+static inline uint8_t
+coap_header_type (uint8_t c)
 {
-     return ((c >> 4) & 0x3);
+  return ((c >> 4) & 0x3);
 }
 
 #define COAP_MAX_TKLEN		8
 
-static inline uint8_t coap_header_tklen (uint8_t c)
+static inline uint8_t
+coap_header_tklen (uint8_t c)
 {
-     return (c & 0xf);
+  return (c & 0xf);
+}
+
+char *type_str[] = { "CON", "NON", "ACK", "RST" };
+
+static inline const char *
+type2str (uint8_t type)
+{
+     return type_str[type];
 }
 
 int
@@ -116,13 +130,13 @@ coap_header_parse (struct message *msg)
 
   if (coap_header_ver (*hdr) != COAP_HEADER_VERSION)
     {
-      warning ("unknown version num");
+      warning ("invalid version num");
       return -1;
     }
 
-  msg->type = coap_header_type(*hdr);
+  msg->type = coap_header_type (*hdr);
 
-  msg->tklen = coap_header_tklen(*hdr);
+  msg->tklen = coap_header_tklen (*hdr);
   if (msg->tklen > COAP_MAX_TKLEN)
     {
       warning ("tklen > 8");
@@ -141,14 +155,20 @@ coap_header_parse (struct message *msg)
 
   msg->code = code->val;
 
+  msg->id = htons (*(uint16_t *) (hdr + 2));
+
+  system_log ("%s:  type: %s  tklen: %d  code: %s  mid: %d\n",
+  	      __func__, type2str (msg->type), msg->tklen, code->name, msg->id);
+
   return 0;
 }
 
-struct message *coap_message_new ()
+struct message *
+coap_message_new ()
 {
   struct message *msg;
 
-  msg = xmalloc (sizeof (struct coap_code));
+  msg = xmalloc (sizeof (struct message));
 
   return msg;
 }
@@ -156,7 +176,8 @@ struct message *coap_message_new ()
 void
 coap_message_free (struct message *msg)
 {
+  assert(msg != NULL);
+
   if (msg != NULL)
     free (msg);
 }
-
