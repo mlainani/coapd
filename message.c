@@ -143,6 +143,12 @@ coap_header_parse (struct message *msg)
       return -1;
     }
 
+  if (msg->len < COAP_HDR_SIZE + msg->tklen)
+    {
+      warning ("truncated msg");
+      return -1;
+    }
+
   key.val = *(hdr + 1);
   code = bsearch (&key, coap_codes, nr_of_codes,
 		  sizeof (struct coap_code), compare);
