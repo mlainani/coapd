@@ -3,6 +3,7 @@
 
 #include <netinet/in.h>		/* struct in6_addr */
 #include <stdint.h>		/* uintN_t */
+#include <sys/queue.h>
 
 /* Fixed-size header length */
 #define COAP_HDR_SIZE	4
@@ -12,11 +13,12 @@
 
 /* CoAP types */
 
-enum {
-     COAP_TYPE_CON = 0x0,
-     COAP_TYPE_NON,
-     COAP_TYPE_ACK,
-     COAP_TYPE_RST
+enum
+{
+  COAP_TYPE_CON = 0x0,
+  COAP_TYPE_NON,
+  COAP_TYPE_ACK,
+  COAP_TYPE_RST
 };
 
 /* CoAP codes */
@@ -54,7 +56,17 @@ enum
   COAP_RESP_PROXYING_NOT_SUPPORTED	/* 5.05 */
 };
 
-struct message {
+struct request
+{
+  TAILQ_HEAD (tailhead, uri_path) path;
+};
+
+struct response
+{
+};
+
+struct message
+{
   size_t len;
   struct in6_addr src;
   uint8_t type;
@@ -65,6 +77,12 @@ struct message {
   uint8_t *opt;
   uint8_t *payload;
   uint8_t data[COAP_MSG_MAX_SIZE];
+  LIST_ENTRY (message) entries;
+  union
+  {
+    struct request req;
+    struct response resp;
+  };
 };
 
 extern int coap_header_parse (struct message *msg);
@@ -72,5 +90,7 @@ extern int coap_header_parse (struct message *msg);
 extern struct message *coap_message_new ();
 
 extern void coap_message_free (struct message *msg);
+
+extern void *coap_message_process (void *arg);
 
 #endif /* MESSAGE_H */

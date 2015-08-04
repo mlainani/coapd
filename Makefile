@@ -40,9 +40,9 @@ system: hexdump.c system.c
 	rm -f system
 	$(CC) $(CFLAGS) hexdump.c system.c -o system
 
-server: common.c main.c message.c server.c
+server: common.c main.c message.c option.c request.c server.c
 	rm -f server
-	$(CC) $(CFLAGS) common.c main.c message.c server.c -o server
+	$(CC) $(CFLAGS) common.c main.c message.c option.c request.c server.c -o server -lpthread
 
 test_codes: test_codes.c codes.c
 	rm -f test_codes

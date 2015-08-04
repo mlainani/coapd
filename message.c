@@ -4,21 +4,16 @@
 #include <stdlib.h>		/* malloc(), free() */
 #include <string.h>		/* size_t */
 
-#include "server.h"
 #include "message.h"
-
-int
-coap_req_get (uint16_t mid, uint8_t * buf, size_t buflen)
-{
-  return 0;
-}
+#include "request.h"
+#include "server.h"
 
 /* Sorted array of messages for binary search */
 static struct coap_code
 {
   uint8_t val;
   char *name;
-  int (*handler) (uint16_t mid, uint8_t * buf, size_t buflen);
+  int (*handler) (struct message *msg);
 } coap_codes[] =
 {
   {
@@ -143,6 +138,8 @@ coap_header_parse (struct message *msg)
       return -1;
     }
 
+  /* Low-cost sanity check */
+  /* Less visible than in calling function but saves the code lookup time below */
   if (msg->len < COAP_HDR_SIZE + msg->tklen)
     {
       warning ("truncated msg");
@@ -187,3 +184,63 @@ coap_message_free (struct message *msg)
   if (msg != NULL)
     free (msg);
 }
+
+int
+coap_message_add (struct message *msg)
+{
+  return -1;
+}
+
+int
+coap_message_find (struct message *msg)
+{
+  return -1;
+}
+
+int
+coap_message_del (struct message *msg)
+{
+  return -1;
+}
+
+# if 1 
+void *
+coap_message_process (void *arg)
+{
+  struct message *msg = (struct message *)arg;
+  uint8_t val;
+  int ret;
+
+  val = msg->code;
+
+  if (coap_codes[val].handler != NULL) {
+    ret = coap_codes[val].handler(msg);
+  }
+
+  if (ret == 0)
+    return NULL;
+  
+  return NULL;
+}
+#else
+void *
+coap_message_process (void *arg)
+{
+  struct message *msg = (struct message *)arg;
+  if (msg->len > COAP_HDR_SIZE + msg->tklen) {
+    /* Options are present */
+    ;
+  }
+  else {
+    if (msg->type == COAP_TYPE_CON && msg->code == COAP_EMPTY) {
+      /* "CoAP ping" */
+      ;
+    }
+    else {
+      /* Something else */
+      ;
+    }
+  }
+  return NULL;
+}
+#endif

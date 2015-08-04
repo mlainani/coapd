@@ -1,6 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <pthread.h>
 #include <sys/types.h>
 
 /* The name of this program.  */
