@@ -5,16 +5,16 @@
 #include "server.h"
 
 static struct option options[] = {
-  {COAP_OPT_IF_MATCH, true, 0, 8, "If-Match"},
-  {COAP_OPT_URI_HOST, false, 1, 255, "Uri-Host"},
-  {COAP_OPT_ETAG, true, 1, 8, "ETag"},
-  {COAP_OPT_IF_NONE_MATCH, false, 0, 0, "If-None-Match"},
-  {COAP_OPT_URI_PORT, false, 0, 2, "Uri-Port"},
-  {COAP_OPT_URI_PATH, true, 0, 255, "Uri-Path"},
-  {COAP_OPT_URI_QUERY, true, 0, 255, "Uri-Query"},
-  {COAP_OPT_ACCEPT, false, 0, 2, "Accept"},
-  {COAP_OPT_PROXY_URI, false, 1, 1034, "Proxy-Uri"},
-  {COAP_OPT_PROXY_SCHEME, false, 1, 255, "Proxy-Scheme"},
+  {COAP_OPT_IF_MATCH, true, 0, 8, "If-Match"},			/* opaque */
+  {COAP_OPT_URI_HOST, false, 1, 255, "Uri-Host"},		/* string */		      
+  {COAP_OPT_ETAG, true, 1, 8, "ETag"},				/* opaque */
+  {COAP_OPT_IF_NONE_MATCH, false, 0, 0, "If-None-Match"},	/* empty */
+  {COAP_OPT_URI_PORT, false, 0, 2, "Uri-Port"},			/* uint */
+  {COAP_OPT_URI_PATH, true, 0, 255, "Uri-Path"},		/* string */
+  {COAP_OPT_URI_QUERY, true, 0, 255, "Uri-Query"},		/* string */
+  {COAP_OPT_ACCEPT, false, 0, 2, "Accept"},			/* uint */
+  {COAP_OPT_PROXY_URI, false, 1, 1034, "Proxy-Uri"},		/* string */
+  {COAP_OPT_PROXY_SCHEME, false, 1, 255, "Proxy-Scheme"},	/* string */
 };
 
 #define nr_of_options ( sizeof(options) / sizeof(options[0]) )
@@ -82,7 +82,7 @@ coap_req_get (struct message * msg)
 
   opt = msg->data + COAP_HDR_SIZE + msg->tklen;
   offset = 0;
-  left = msg->len;
+  left = msg->len - COAP_HDR_SIZE - msg->tklen;
 
   while (offset < msg->len)
     {
@@ -103,8 +103,7 @@ coap_req_get (struct message * msg)
 
       if (delta == 0 && prev != NULL && prev->repeat == false)
 	{
-	  //warning ("repeated %s\n", prev->name);
-	  warning ("repeated non-repeatable option\n");
+	  system_log ("repeated %s\n", prev->name);
 	  return -1;
 	}
 
@@ -114,13 +113,12 @@ coap_req_get (struct message * msg)
 		      sizeof (struct option), compare);
       if (prev == NULL)
 	{
-	  //warning ("'%d': invalid option\n", key.num);
-	  warning ("unknown request option\n");
+	  system_log ("'%d': invalid option\n", key.num);
 	  return -1;
 	}
       else
 	{
-	  // warning ("%s: option #%d\n", prev->name, prev->num);
+	  system_log ("%s: option #%d\n", prev->name, prev->num);
 	  ;
 	}
       optval = opt + hdrlen;
@@ -130,7 +128,7 @@ coap_req_get (struct message * msg)
 	case COAP_OPT_URI_PATH:
 	  strncpy (str, (char *) optval, optlen);
 	  str[optlen] = '\0';
-	  //warning ("%s: str %s\n", prev->name, str);
+	  system_log ("%s: str %s\n", prev->name, str);
 	  break;
 	default:
 	  break;
