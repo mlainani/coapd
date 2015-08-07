@@ -32,59 +32,20 @@ compare (const void *p1, const void *p2)
   return 0;
 }
 
-#if 0
-static struct request *
-request_alloc ()
-{
-  struct request *req;
-
-  /* Note: exiting the program upon memory allocation failure is acceptable only during prototyping */
-  req = (struct request *) emalloc (sizeof (struct request));
-
-  return req;
-}
-
-static void
-request_free ()
-{
-  return;
-}
-
-static void
-request_init (struct request *req)
-{
-  TAILQ_INIT (&req->path);
-}
-
-static int
-request_path_add (struct request *req, size_t len, uint8_t * str)
-{
-  struct uri_path *uri_path;
-
-  uri_path = (struct uri_path *) emalloc (sizeof (struct uri_path));
-  uri_path->len = len;
-  uri_path->str = str;
-  TAILQ_INSERT_TAIL (&req->path, uri_path, paths);
-  return 0;
-}
-#endif
-
-#if 1
 int
 coap_req_get (struct message * msg)
 {
   uint8_t *opt, *optval;
-  size_t offset, left;
+  size_t offset, left, len, hdrlen;
   uint16_t delta, optlen, optnum;
-  int hdrlen;
   struct option key, *prev = NULL;
   char str[256];		/* terminating null byte */
 
   opt = msg->data + COAP_HDR_SIZE + msg->tklen;
   offset = 0;
-  left = msg->len - COAP_HDR_SIZE - msg->tklen;
+  left = len = msg->len - COAP_HDR_SIZE - msg->tklen;
 
-  while (offset < msg->len)
+  while (offset < len)
     {
       hdrlen = option_parse (opt, left, &delta, &optlen);
       if (hdrlen < 0)
@@ -95,6 +56,7 @@ coap_req_get (struct message * msg)
 
       offset += hdrlen;
       left -= hdrlen;
+      opt += hdrlen;
 
       if (delta == PAYLOAD_MKR)
 	{
@@ -136,91 +98,10 @@ coap_req_get (struct message * msg)
 
       offset += optlen;
       left -= optlen;
-      opt += offset;
+      opt += optlen;
     }
 
  payload:
   ;
   return 0;
 }
-#else
-int
-coap_req_get (uint16_t mid, uint8_t * buf, size_t buflen)
-{
-  struct request *req;
-  uint8_t *opt, *optval;
-  size_t offset, left;
-  uint16_t delta, optlen, optnum;
-  int hdrlen;
-  struct option key, *prev = NULL;
-  char str[256];		/* terminating null byte */
-
-  req = request_alloc ();
-  if (req == NULL)
-    return -1;
-  request_init (req);
-
-  opt = buf;
-  offset = 0;
-  left = buflen;
-
-  while (offset < buflen)
-    {
-
-      hdrlen = option_parse (opt, left, &delta, &optlen);
-      if (hdrlen < 0)
-	{
-	  request_free ();
-	  return -1;
-	}
-
-      offset += hdrlen;
-      left -= hdrlen;
-
-      if (delta == PAYLOAD_MKR)
-	{
-	  goto payload;
-	}
-
-      if (delta == 0 && prev != NULL && prev->repeat == false)
-	{
-	  warning ("repeated %s\n", prev->name);
-	  return -1;
-	}
-
-      optnum = (prev == NULL ? 0 : prev->num) + delta;
-      key.num = optnum;
-      prev = bsearch (&key, options, nr_of_options,
-		      sizeof (struct option), compare);
-      if (prev == NULL)
-	{
-	  warning ("'%d': invalid option\n", key.num);
-	  return -1;
-	}
-      else
-	warning ("%s: option #%d\n", prev->name, prev->num);
-
-      optval = opt + hdrlen;
-
-      switch (optnum)
-	{
-	case COAP_OPT_URI_PATH:
-	  strncpy (str, (char *) optval, optlen);
-	  str[optlen] = '\0';
-	  warning ("%s: str %s\n", prev->name, str);
-	  break;
-	default:
-	  break;
-	}
-
-      offset += optlen;
-      left -= optlen;
-      opt += offset;
-    }
-
-payload:
-  ;
-
-  return 0;
-}
-#endif
